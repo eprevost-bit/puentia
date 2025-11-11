@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<!--    <template id="report_puentia.layout_presupuesto_puentia_mods"-->
+<!--              inherit_id="report_puentia.layout_presupuesto_puentia">-->
+<!--        <xpath expr="//div[@name='company_address']/parent::div" position="replace">-->
+<!--        </xpath>-->
+
+<!--        <xpath expr="//img[hasclass('o_company_logo_small')]/parent::div" position="replace">-->
+<!--            <div class="d-flex justify-content-end align-items-center mb-2" style="margin-top: 20px">-->
+<!--                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-width: 250px;"-->
+<!--                     alt="Logo"/>-->
+<!--            </div>-->
+<!--        </xpath>-->
+<!--    </template>-->
+</odoo>
