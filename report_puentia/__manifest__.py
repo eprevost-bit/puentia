@@ -8,7 +8,8 @@
         # 'security/ir.model.access.csv', # Necesario si añades modelos nuevos (no es el caso aquí)
         'views/report_actions.xml',     # Define la acción de imprimir
         'views/report_puentia_views.xml',    # Define el diseño (la parte importante)
-        'views/report_layout.xml',    # Define el diseño (la parte importante)
+        'views/report_invoice_puentia.xml',    # Define el diseño (la parte importante)
+
     ],
     'installable': True,
 }
