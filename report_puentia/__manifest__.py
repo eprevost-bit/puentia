@@ -9,6 +9,7 @@
         'views/report_actions.xml',     # Define la acción de imprimir
         'views/report_puentia_views.xml',    # Define el diseño (la parte importante)
         'views/report_invoice_puentia.xml',    # Define el diseño (la parte importante)
+        'views/sale_copy_report.xml',    # Define el diseño (la parte importante)
 
     ],
     'installable': True,
