@@ -16,7 +16,7 @@
                                          style="max-width: 250px;" alt="Logo"/>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <h2 style="font-family: 'Times New Roman', Times, serif; font-size: 50px; color: #ff2100; margin: 0;">
+                                    <h2 style="font-family: 'Times New Roman', Times, serif; font-size: 40px; color: #ff2100; margin: 0;">
                                         FACTURA_<t t-out="doc.name"/>
                                     </h2>
                                 </div>
@@ -27,7 +27,7 @@
                             <t t-set="forced_vat" t-value="doc.fiscal_position_id.foreign_vat"/>
 
                             <div class="row mb-4"
-                                 style="margin-left: 35px; font-size: 17px;">
+                                 style="margin-left: 35px; font-size: 15px;">
 
                                 <div class="col-7">
                                     <div class="row">
@@ -70,7 +70,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <table class="o_has_total_table table o_main_table table-borderless" style="font-size: 17px;"
+                            <table class="o_has_total_table table o_main_table table-borderless" style="font-size: 15px;"
                                    name="invoice_line_table">
                                 <thead>
                                     <tr style="border-bottom: 1px solid #ff2100;">
