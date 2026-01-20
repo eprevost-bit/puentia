@@ -7,32 +7,23 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     def write(self, vals):
-        # 1. Bypass de seguridad para administradores o procesos del sistema
+        # 1. Bypass para administradores
         if self.env.is_superuser() or self.env.context.get('bypass_risk_check'):
             return super().write(vals)
 
         for move in self:
-            if move.is_invoice(include_receipts=True):
+            if move.state == 'posted' and move.is_invoice(include_receipts=True):
 
-                # 3. Verificamos el permiso
                 if not self.env.user.has_group('sale_purchase_security.group_modify_posted_invoice'):
-
-                    # 4. Lista de campos prohibidos
                     restricted_fields = {
-                        'invoice_line_ids',  # Las líneas de factura
-                        'line_ids',  # Las líneas contables (subyacentes)
-                        'partner_id',  # El cliente/proveedor
-                        'invoice_date',  # La fecha
-                        'currency_id',  # La moneda
-                        'invoice_payment_term_id'  # Plazos de pago
+                        'invoice_line_ids', 'line_ids', 'partner_id',
+                        'invoice_date', 'currency_id', 'invoice_payment_term_id'
                     }
-
-                    # 5. Comprobamos si intentan tocar algo prohibido
                     if any(field in vals for field in restricted_fields):
                         raise UserError(_(
                             "ACCESO DENEGADO.\n"
-                            "No tienes permiso para modificar Facturas (en ningún estado).\n"
-                            "Solicita el permiso 'Contabilidad: Modificar Facturas Publicadas' o contacta a tu administrador."
+                            "No tienes permiso para modificar una Factura ya Publicada.\n"
+                            "Solicita el permiso especial o reviértela a borrador si es permitido."
                         ))
 
         return super().write(vals)
@@ -41,23 +32,55 @@ class AccountMove(models.Model):
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
+    def write(self, vals):
+        if self.env.is_superuser() or self.env.context.get('bypass_risk_check'):
+            return super().write(vals)
+
+        # Campos financieros críticos
+        financial_fields = {'price_unit', 'discount', 'quantity'}
+
+        # Si el usuario intenta cambiar precio, descuento o cantidad...
+        if any(field in vals for field in financial_fields):
+            for line in self:
+                # 1. Comprobamos si viene de una VENTA (sale_line_ids tiene valor)
+                # 2. Comprobamos si viene de una COMPRA (purchase_line_id tiene valor)
+                is_from_sale = bool(line.sale_line_ids)
+                is_from_purchase = bool(line.purchase_line_id)
+
+                if is_from_sale or is_from_purchase:
+                    # Opcional: Permitir al grupo especial modificar precios incluso si vienen de venta/compra
+                    # Si quieres que NADIE pueda cambiarlo, borra las siguientes 2 líneas.
+                    if self.env.user.has_group('sale_purchase_security.group_modify_posted_invoice'):
+                        continue
+
+                    origin_type = "Pedido de Venta" if is_from_sale else "Pedido de Compra"
+                    raise UserError(_(
+                        "OPERACIÓN BLOQUEADA.\n"
+                        "Esta línea proviene de un %(origin)s.\n"
+                        "No puedes cambiar el precio, cantidad o descuento directamente en la factura.\n"
+                        "Debes corregir el pedido original si es necesario.",
+                        origin=origin_type
+                    ))
+
+        return super().write(vals)
+
     @api.constrains('analytic_distribution')
     def _check_analytic_max_100(self):
         """
-        Validar AL GUARDAR que no se pase del 100%.
+        Validación Analítica: Impide guardar si supera el 100%.
+        Permite guardar si es menor (ej. 90%).
         """
         for line in self:
             if line.analytic_distribution:
-                # Sumamos los porcentajes
                 total = sum(float(v) for v in line.analytic_distribution.values())
 
-                # Si el total es MAYOR que 100.0 (float_compare devuelve 1)
+                # Si total > 100.0
                 if float_compare(total, 100.0, precision_digits=2) == 1:
                     raise ValidationError(_(
-                        "¡Error de Analítica en Línea de Factura!\n"
-                        "Línea: %(label)s\n"
-                        "Total asignado: %(sum)s%%\n\n"
-                        "No puedes asignar más del 100%%. Ajusta los valores para guardar.",
-                        label=line.name or line.product_id.name,
+                        "¡Error de Analítica!\n"
+                        "Producto: %(prod)s\n"
+                        "Has asignado un %(sum)s%%.\n"
+                        "No está permitido superar el 100%%.",
+                        prod=line.name or line.product_id.name,
                         sum=total
                     ))
