@@ -25,20 +25,20 @@ class SaleOrder(models.Model):
                         ))
         return super().write(vals)
 
-    def action_confirm(self):
-        """Validar analítica al confirmar venta"""
-        self._check_analytic_distribution_100()
-        return super().action_confirm()
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
 
-    def _check_analytic_distribution_100(self):
-        for line in self.order_line:
-            if line.display_type: continue
-
+    @api.constrains('analytic_distribution')
+    def _check_analytic_max_100(self):
+        for line in self:
             if line.analytic_distribution:
                 total = sum(float(v) for v in line.analytic_distribution.values())
-                if float_compare(total, 100.0, precision_digits=2) != 0:
+                if float_compare(total, 100.0, precision_digits=2) == 1:
                     raise ValidationError(_(
-                        "Error Analítico en Ventas (Producto: %(prod)s).\n"
-                        "La suma es %(sum)s%%, DEBE ser exactamente 100%%.",
-                        prod=line.name, sum=total
+                        "¡Error de Analítica en Venta!\n"
+                        "Producto: %(prod)s\n"
+                        "Total asignado: %(sum)s%%\n"
+                        "No puedes superar el 100%%.",
+                        prod=line.name,
+                        sum=total
                     ))

@@ -37,23 +37,27 @@ class AccountMove(models.Model):
 
         return super().write(vals)
 
-    def action_post(self):
-        """Validar analítica al publicar la factura"""
-        self._check_analytic_distribution_100()
-        return super().action_post()
 
-    def _check_analytic_distribution_100(self):
-        for move in self:
-            # Revisamos invoice_line_ids que son las líneas visibles de la factura
-            for line in move.invoice_line_ids:
-                if line.display_type: continue
+class AccountMoveLine(models.Model):
+    _inherit = 'account.move.line'
 
-                if line.analytic_distribution:
-                    total = sum(float(v) for v in line.analytic_distribution.values())
-                    if float_compare(total, 100.0, precision_digits=2) != 0:
-                        raise ValidationError(_(
-                            "Error Analítico en Factura (Línea: %(label)s).\n"
-                            "La distribución suma %(sum)s%%. Debe ser EXACTAMENTE 100%%.",
-                            label=line.name or line.product_id.name,
-                            sum=total
-                        ))
+    @api.constrains('analytic_distribution')
+    def _check_analytic_max_100(self):
+        """
+        Validar AL GUARDAR que no se pase del 100%.
+        """
+        for line in self:
+            if line.analytic_distribution:
+                # Sumamos los porcentajes
+                total = sum(float(v) for v in line.analytic_distribution.values())
+
+                # Si el total es MAYOR que 100.0 (float_compare devuelve 1)
+                if float_compare(total, 100.0, precision_digits=2) == 1:
+                    raise ValidationError(_(
+                        "¡Error de Analítica en Línea de Factura!\n"
+                        "Línea: %(label)s\n"
+                        "Total asignado: %(sum)s%%\n\n"
+                        "No puedes asignar más del 100%%. Ajusta los valores para guardar.",
+                        label=line.name or line.product_id.name,
+                        sum=total
+                    ))
