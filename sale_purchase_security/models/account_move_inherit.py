@@ -65,22 +65,20 @@ class AccountMoveLine(models.Model):
         return super().write(vals)
 
     @api.constrains('analytic_distribution')
-    def _check_analytic_max_100(self):
+    def _check_analytic_exact_100(self):
         """
-        Validación Analítica: Impide guardar si supera el 100%.
-        Permite guardar si es menor (ej. 90%).
+        Validación Analítica: Exige que sea EXACTAMENTE 100%.
+        Si es 99% o 101%, lanzará error.
         """
         for line in self:
             if line.analytic_distribution:
                 total = sum(float(v) for v in line.analytic_distribution.values())
-
-                # Si total > 100.0
-                if float_compare(total, 100.0, precision_digits=2) == 1:
+                if float_compare(total, 100.0, precision_digits=2) != 0:
                     raise ValidationError(_(
                         "¡Error de Analítica!\n"
                         "Producto: %(prod)s\n"
-                        "Has asignado un %(sum)s%%.\n"
-                        "No está permitido superar el 100%%.",
-                        prod=line.name or line.product_id.name,
+                        "La distribución suma actualmente un %(sum)s%%.\n"
+                        "Es obligatorio que la suma sea EXACTAMENTE 100%%.",
+                        prod=line.name or line.product_id.name or 'Línea sin nombre',
                         sum=total
                     ))
